@@ -1,0 +1,41 @@
+{
+  "title": "AIOps Quality Service Dashboard",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Prediction requests total",
+      "targets": [
+        {
+          "expr": "prediction_requests_total",
+          "legendFormat": "requests"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Drift detected total",
+      "targets": [
+        {
+          "expr": "drift_detected_total",
+          "legendFormat": "drift"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Prediction latency",
+      "targets": [
+        {
+          "expr": "prediction_latency_seconds_sum / prediction_latency_seconds_count",
+          "legendFormat": "avg latency"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 }
+    }
+  ]
+}
