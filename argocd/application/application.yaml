@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DimaSvJet/aiops-quality-project.git
-    targetRevision: main
+    targetRevision: master
     path: helm
   destination:
     server: https://kubernetes.default.svc
