@@ -1,26 +1,33 @@
-name: Train model pipeline
+name: Retrain model pipeline
 
 on:
-  push:
-    branches:
-      - master
-      - main
+  workflow_dispatch:
 
 jobs:
-  train-model:
+  retrain-model:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Start Step Function execution
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
         run: |
-          aws stepfunctions start-execution \
-            --state-machine-arn "${{ secrets.STATE_MACHINE_ARN }}" \
-            --name "train-${GITHUB_SHA::7}-$(date +%s)" \
-            --input "{\"source\":\"github-actions\",\"commit\":\"${GITHUB_SHA::7}\"}"
+          pip install -r requirements.txt
+
+      - name: Run retraining
+        run: |
+          python model/train.py
+
+      - name: Build Docker image
+        run: |
+          docker build -t aiops-quality-service:latest .
+
+      - name: Show created files
+        run: |
+          ls -la model/
