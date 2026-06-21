@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: aiops-quality-service
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+containerPort: 8000
