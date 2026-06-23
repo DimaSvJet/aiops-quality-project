@@ -22,5 +22,10 @@ spec:
         - name: {{ .Chart.Name | quote }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          env:
+            - name: MODEL_PATH
+              value: {{ .Values.env.MODEL_PATH | quote }}
+            - name: RETRAIN_WEBHOOK_URL
+              value: {{ .Values.env.RETRAIN_WEBHOOK_URL | quote }}
           ports:
             - containerPort: {{ .Values.containerPort }}

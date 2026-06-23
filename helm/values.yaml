@@ -10,3 +10,8 @@ service:
   port: 8000
 
 containerPort: 8000
+
+env:
+  MODEL_PATH: "model/model.pkl"
+  RETRAIN_WEBHOOK_URL: ""
+

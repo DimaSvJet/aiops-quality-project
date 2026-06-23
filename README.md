@@ -120,35 +120,269 @@ Dashboard contains:
     Drift detected events
     Prediction latency
 
-9. Verification
-9.1. FastAPI
-Open: http://127.0.0.1:8000/docs
+9. Verification Guide
 
-9.2. Metrics
-Open: http://127.0.0.1:8000/metrics
+## 9.1. Verify FastAPI service
 
-9.3. GitHub Actions
+    Start service:
 
-Go to:
-Actions → Retrain model pipeline
+        ```bash
+        uvicorn app.main:app --reload
+        ```
 
-Check successful workflow execution.
+    Open:
 
-9.4. Helm
-Run:
-helm lint helm
+        ```
+        http://127.0.0.1:8000/docs
+        ```
 
-9.5. Docker
+    Health endpoint:
 
-Run:
-docker build -t aiops-quality-service .
+        ```
+        http://127.0.0.1:8000/health
+        ```
 
-10. Technologies
-    Python 3.12
+    Expected response:
+
+        ```json
+        {
+        "status": "healthy",
+        "model_loaded": true,
+        "model_path": "model/model.pkl",
+        "webhook_configured": false
+        }
+        ```
+
+## 9.2. Verify Prometheus metrics
+
+    Open:
+
+        ```
+        http://127.0.0.1:8000/metrics
+        ```
+
+    Available metrics:
+
+        - prediction_requests_total
+        - drift_detected_total
+        - prediction_latency_seconds
+
+    Prometheus target page:
+
+        ```
+        http://localhost:9090/targets
+        ```
+
+    Target status should be UP.
+
+## 9.3. Verify Grafana dashboard
+
+    Open:
+
+        ```
+        http://localhost:3000
+        ```
+
+    Dashboard contains:
+
+        - Prediction requests
+        - Prediction latency
+        - Drift events
+
+    Prometheus datasource is used for visualization.
+
+## 9.4. Verify logging with Loki and Promtail
+
+    Generate requests:
+
+        ```json
+        {
+        "value": 50
+        }
+        ```
+
+    and
+
+        ```json
+        {
+        "value": 250
+        }
+        ```
+
+    Logs are written into:
+
+        ```
+        app.log
+        ```
+
+    Promtail sends logs to Loki.
+
+    In Grafana:
+
+        ```
+        Explore → Loki
+        ```
+
+    Query:
+
+        ```logql
+        {job="aiops-quality-service"}
+        ```
+
+    Example log entries:
+
+        ```
+        INFO Input=50.0, prediction=100.0, drift=False
+        WARNING Drift detected: input=250.0, prediction=500.0
+        ```
+
+## 9.5. Verify drift detector
+
+    Drift rule:
+
+        ```python
+        abs(valu1e) > 100
+        ```
+
+    Example request:
+
+        ```json
+        {
+        "value": 250
+        }
+        ```
+
+    Response:
+
+        ```json
+        {
+        "input1": 250,
+        "predi1ction": 500,
+        "drift1_detected": true
+        }
+        ```
+
+    Drift event:
+
+        - increments drift_detected_total metric;
+        - writes1 warning into app.log;
+        - optionally triggers retraining webhook.
+
+## 9.6. Verify GitHub Actions retraining pipeline
+
+    Open:
+
+        ```
+        GitHub → Actions → Retrain model pipeline
+        ```
+
+    Pipeline stages:
+        1. Checkout repository
+        2. Setup Python
+        3. Install dependencies
+        4. Run train.py
+        5. Build Docker image
+        6. Show created artifacts
+
+    Workflow can be triggered manually.
+
+## 9.7. Update model
+
+    Retrain model:
+
+        ```bash
+        python model/train.py
+        ```
+
+    Generated files:
+
+        ```
+        model/model.pkl
+        model/version.txt
+        ```
+
+    Restart FastAPI:
+
+        ```bash
+        uvicorn app.main:app --reload
+        ```
+
+    Verify:
+
+        ```
+        http://127.0.0.1:8000/health
+        ```
+
+    Model should be loaded successfully:
+
+        ```json
+        {
+        "model_loaded": true
+        }
+        ```
+
+## 9.8. Verify Helm chart
+
+    Lint chart:
+
+        ```bash
+        helm lint helm
+        ```
+
+    Render manifests:
+
+        ```bash
+        helm template aiops-quality-service helm
+        ```
+
+    Deployment contains:
+        - image
+        - port
+        - MODEL_PATH
+        - RETRAIN_WEBHOOK_URL
+
+## 9.9. Verify ArgoCD
+
+    Application:
+
+        ```
+        argocd/application/application.yaml
+        ```
+
+    Auto-sync settings:
+        ```yaml
+        prune: true
+        selfHeal: true
+        ```
+
+    ArgoCD automatically synchronizes Kubernetes manifests.
+
+10. Architecture
+
     FastAPI
-    Docker
-    Helm
-    ArgoCD
+    ↓
+    Prometheus metrics
+    ↓
     Prometheus
+    ↓
     Grafana
+
+    FastAPI
+    ↓
+    app.log
+    ↓
+    Promtail
+    ↓
+    Loki
+    ↓
+    Grafana Explore
+
+    Drift detector
+    ↓
+    Webhook
+    ↓
     GitHub Actions
+    ↓
+    Retraining
+    ↓
+    New model
